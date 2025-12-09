@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Trading Form - Dark Mode</title>
+
+<style>
+    body {
+        background: #0e0f12;
+        color: #e4e4e4;
+        font-family: Arial, sans-serif;
+        padding: 40px;
+    }
+
+    .container {
+        max-width: 600px;
+        margin: auto;
+        background: #1a1c20;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 0 15px rgba(255,255,255,0.05);
+    }
+
+    h2 {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #80aaff;
+    }
+
+    label {
+        font-weight: bold;
+        margin-top: 12px;
+        display: block;
+        font-size: 15px;
+    }
+
+    select, input {
+        width: 100%;
+        padding: 10px;
+        margin-top: 6px;
+        border-radius: 8px;
+        border: 1px solid #333;
+        background: #2a2d33;
+        color: white;
+        font-size: 15px;
+        box-sizing: border-box;
+    }
+
+    .row {
+        display: flex;
+        gap: 15px;
+    }
+
+    .col {
+        flex: 1;
+    }
+
+    .output-box {
+        background: #111318;
+        padding: 12px;
+        margin-top: 6px;
+        border-radius: 8px;
+        border: 1px solid #333;
+        color: #9bb8ff;
+        font-size: 16px;
+    }
+
+    button {
+        width: 100%;
+        padding: 12px;
+        margin-top: 20px;
+        border-radius: 8px;
+        background: #3a57ff;
+        border: none;
+        color: white;
+        font-size: 17px;
+        cursor: pointer;
+    }
+
+    #statusBox {
+        margin-top: 18px;
+        padding: 12px;
+        border-radius: 6px;
+        font-weight: bold;
+        text-align: center;
+        display: none;
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <h2>Trading Data Form</h2>
+
+    <label>Market Type</label>
+    <select id="market">
+        <option>UT</option>
+        <option>DT</option>
+        <option>SW</option>
+    </select>
+
+    <label>Major Swing (T/F)</label>
+    <select id="majorSwing">
+        <option>T</option>
+        <option>F</option>
+    </select>
+
+    <div class="row">
+        <div class="col">
+            <label>Trading Zones DQ (0–2)</label>
+            <select id="dq">
+                <option>0</option><option>1</option><option>2</option>
+            </select>
+        </div>
+        <div class="col">
+            <label>DF Liquidity (0–2)</label>
+            <select id="liq">
+                <option>0</option><option>1</option><option>2</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <label>Impulse (0–3)</label>
+            <select id="impulse">
+                <option>0</option><option>1</option><option>2</option><option>3</option>
+            </select>
+        </div>
+        <div class="col">
+            <label>Imbalance (0–3)</label>
+            <select id="imbalance">
+                <option>0</option><option>1</option><option>2</option><option>3</option>
+            </select>
+        </div>
+    </div>
+
+    <label>PA Confirm (Fib)</label>
+    <select id="fib">
+        <option>38.2</option>
+        <option>50</option>
+        <option>61.8</option>
+    </select>
+
+    <div class="row">
+        <div class="col">
+            <label>SL</label>
+            <input type="number" id="sl" placeholder="เช่น 400">
+        </div>
+        <div class="col">
+            <label>RR</label>
+            <input type="number" id="rr" placeholder="เช่น 2">
+        </div>
+    </div>
+
+    <label>TP (Auto)</label>
+    <div class="output-box" id="tpOutput">-</div>
+
+    <label>DQ Total</label>
+    <div class="output-box" id="dqTotalOutput">-</div>
+
+    <label>Win / Lose</label>
+    <select id="result">
+        <option>Win</option>
+        <option>Lose</option>
+    </select>
+
+    <button id="saveBtn">Save</button>
+
+    <div id="statusBox"></div>
+</div>
+
+<!-- Firebase Modular SDK (Firestore) -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+    function updateValues() {
+        let sl = parseFloat(document.getElementById("sl").value);
+        let rr = parseFloat(document.getElementById("rr").value);
+
+        let dq = Number(document.getElementById("dq").value);
+        let liq = Number(document.getElementById("liq").value);
+        let impulse = Number(document.getElementById("impulse").value);
+        let imbalance = Number(document.getElementById("imbalance").value);
+
+        document.getElementById("tpOutput").innerText =
+            (!isNaN(sl) && !isNaN(rr)) ? sl * rr : "-";
+
+        document.getElementById("dqTotalOutput").innerText =
+            dq + liq + impulse + imbalance;
+    }
+
+    document.querySelectorAll("input, select").forEach(el => {
+        el.addEventListener("input", updateValues);
+        el.addEventListener("change", updateValues);
+    });
+
+    /* ------------------------------------
+       Firebase Init (FireStore only)
+    ------------------------------------ */
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyA2JbqEJcCr0yDKA3mS3luuzez2oTPIrIk",
+        authDomain: "ivh-data.firebaseapp.com",
+        projectId: "ivh-data",
+        storageBucket: "ivh-data.firebasestorage.app",
+        messagingSenderId: "886033947004",
+        appId: "1:886033947004:web:00e27080c19b79b644ecf9"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    console.log("Firestore initialized ✔");
+
+    /* ------------------------------------
+       Save to Firestore
+    ------------------------------------ */
+    document.getElementById("saveBtn").addEventListener("click", async () => {
+        const box = document.getElementById("statusBox");
+
+        const data = {
+            market: market.value,
+            majorSwing: majorSwing.value,
+            dq: Number(dq.value),
+            dfLiquidity: Number(liq.value),
+            impulse: Number(impulse.value),
+            imbalance: Number(imbalance.value),
+            fib: fib.value,
+            sl: Number(sl.value),
+            rr: Number(rr.value),
+            tp: document.getElementById("tpOutput").innerText,
+            dqTotal: document.getElementById("dqTotalOutput").innerText,
+            result: document.getElementById("result").value,
+            timestamp: Date.now()
+        };
+
+        try {
+            await addDoc(collection(db, "trades"), data);
+            box.style.background = "#1e8b3d";
+            box.style.display = "block";
+            box.innerText = "✔ บันทึกสำเร็จ (Firestore)!";
+        } catch (err) {
+            box.style.background = "#8b1e1e";
+            box.style.display = "block";
+            box.innerText = "❌ Error: " + err;
+        }
+    });
+</script>
+
+</body>
+</html>
