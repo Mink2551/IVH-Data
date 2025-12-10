@@ -13,7 +13,7 @@
     }
 
     .container {
-        max-width: 600px;
+        max-width: 650px;
         margin: auto;
         background: #1a1c20;
         padding: 25px;
@@ -93,11 +93,24 @@
 <div class="container">
     <h2>Trading Data Form</h2>
 
+    <!-- 🔥 NEW: Trade Direction -->
+    <label>Side (Buy / Sell)</label>
+    <select id="side">
+        <option>Buy</option>
+        <option>Sell</option>
+    </select>
+
     <label>Market Type</label>
     <select id="market">
         <option>UT</option>
         <option>DT</option>
         <option>SW</option>
+    </select>
+
+    <!-- 🔥 NEW: Trend Strength -->
+    <label>Trend Strength (1 = อ่อน , 3 = แข็ง)</label>
+    <select id="trendStrength">
+        <option>1</option><option>2</option><option>3</option>
     </select>
 
     <label>Major Swing (T/F)</label>
@@ -143,9 +156,43 @@
         <option>61.8</option>
     </select>
 
+    <!-- 🔥 NEW: Entry & Exit price -->
     <div class="row">
         <div class="col">
-            <label>SL</label>
+            <label>Entry Price</label>
+            <input type="number" id="entryPrice" placeholder="เช่น 1892.50">
+        </div>
+        <div class="col">
+            <label>Exit Price</label>
+            <input type="number" id="exitPrice" placeholder="เช่น 1896.00">
+        </div>
+    </div>
+
+    <!-- 🔥 NEW: Timeframe & Session -->
+    <div class="row">
+        <div class="col">
+            <label>Timeframe</label>
+            <select id="timeframe">
+                <option>1m</option>
+                <option>5m</option>
+                <option>15m</option>
+                <option>30m</option>
+                <option>1H</option>
+            </select>
+        </div>
+        <div class="col">
+            <label>Session</label>
+            <select id="session">
+                <option>Asia</option>
+                <option>London</option>
+                <option>New York</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <label>SL (Points)</label>
             <input type="number" id="sl" placeholder="เช่น 400">
         </div>
         <div class="col">
@@ -171,69 +218,75 @@
     <div id="statusBox"></div>
 </div>
 
-<!-- Firebase Modular SDK (Firestore) -->
+<!-- Firebase Firestore -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
     import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
     function updateValues() {
-        let sl = parseFloat(document.getElementById("sl").value);
-        let rr = parseFloat(document.getElementById("rr").value);
+        let sl = parseFloat(slInput.value);
+        let rr = parseFloat(rrInput.value);
 
-        let dq = Number(document.getElementById("dq").value);
-        let liq = Number(document.getElementById("liq").value);
-        let impulse = Number(document.getElementById("impulse").value);
-        let imbalance = Number(document.getElementById("imbalance").value);
+        let dqVal = Number(dq.value);
+        let liqVal = Number(liq.value);
+        let impVal = Number(impulse.value);
+        let imbalVal = Number(imbalance.value);
 
-        document.getElementById("tpOutput").innerText =
-            (!isNaN(sl) && !isNaN(rr)) ? sl * rr : "-";
-
-        document.getElementById("dqTotalOutput").innerText =
-            dq + liq + impulse + imbalance;
+        tpOutput.innerText = (!isNaN(sl) && !isNaN(rr)) ? (sl * rr) : "-";
+        dqTotalOutput.innerText = dqVal + liqVal + impVal + imbalVal;
     }
+
+    const slInput = document.getElementById("sl");
+    const rrInput = document.getElementById("rr");
+    const tpOutput = document.getElementById("tpOutput");
+    const dqTotalOutput = document.getElementById("dqTotalOutput");
 
     document.querySelectorAll("input, select").forEach(el => {
         el.addEventListener("input", updateValues);
         el.addEventListener("change", updateValues);
     });
 
-    /* ------------------------------------
-       Firebase Init (FireStore only)
-    ------------------------------------ */
-
-    const firebaseConfig = {
+    /* Firebase Config */
+    const app = initializeApp({
         apiKey: "AIzaSyA2JbqEJcCr0yDKA3mS3luuzez2oTPIrIk",
         authDomain: "ivh-data.firebaseapp.com",
         projectId: "ivh-data",
         storageBucket: "ivh-data.firebasestorage.app",
         messagingSenderId: "886033947004",
         appId: "1:886033947004:web:00e27080c19b79b644ecf9"
-    };
+    });
 
-    const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    console.log("Firestore initialized ✔");
-
-    /* ------------------------------------
-       Save to Firestore
-    ------------------------------------ */
     document.getElementById("saveBtn").addEventListener("click", async () => {
         const box = document.getElementById("statusBox");
 
         const data = {
+            side: side.value,
             market: market.value,
+            trendStrength: Number(trendStrength.value),
             majorSwing: majorSwing.value,
+
             dq: Number(dq.value),
             dfLiquidity: Number(liq.value),
             impulse: Number(impulse.value),
             imbalance: Number(imbalance.value),
+
             fib: fib.value,
+
+            entryPrice: Number(entryPrice.value),
+            exitPrice: Number(exitPrice.value),
+
+            timeframe: timeframe.value,
+            session: session.value,
+
             sl: Number(sl.value),
             rr: Number(rr.value),
-            tp: document.getElementById("tpOutput").innerText,
-            dqTotal: document.getElementById("dqTotalOutput").innerText,
-            result: document.getElementById("result").value,
+            tp: tpOutput.innerText,
+            dqTotal: dqTotalOutput.innerText,
+
+            result: result.value,
+
             timestamp: Date.now()
         };
 
@@ -241,7 +294,7 @@
             await addDoc(collection(db, "trades"), data);
             box.style.background = "#1e8b3d";
             box.style.display = "block";
-            box.innerText = "✔ บันทึกสำเร็จ (Firestore)!";
+            box.innerText = "✔ บันทึกสำเร็จ!";
         } catch (err) {
             box.style.background = "#8b1e1e";
             box.style.display = "block";
